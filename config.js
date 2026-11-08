@@ -4,6 +4,6 @@ window.APP_CONFIG = {
   engagementBaseUrl: 'https://tools-engagement.srv1.antigravity.dev',
   appKey: 'NAXehE4nBD7aaf6vFNzecl3X+9wM3fPp1d/zX+KcKaI=',
   appSecret: 'Eg.e01063991ea673bfcf711e70613b165a793b4cs',
-  downloadBaseUrl: 'https://download.grvty.id',
+  downloadBaseUrl: 'https://download.agrvty.net',
   uploadTimeoutMs: 60000,
 };

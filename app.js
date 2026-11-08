@@ -14,7 +14,7 @@ function go(name) {
   if (state.step === 'camera' && name !== 'camera') stopCamera();
   if (state.step === 'preview' && name !== 'preview') previewOutline?.clear();
   if (state.step === 'loading' && name !== 'loading') window.LoadingFx.clear($('#loadingCard'), $('#loadingScreen'));
-  if (name === 'result') startResultTimer(); else stopResultTimer();
+  if (name !== 'result') stopResultTimer(); // on the result screen it starts once the QR code is up
   state.step = name;
   $('.app-layout').dataset.screen = name; // lets the background arrange itself per screen
   steps.forEach(s => s.classList.toggle('is-active', s.dataset.step === name));
@@ -38,10 +38,12 @@ const closeTerms = () => { terms.hidden = true; };
 // ---------- camera ----------
 const cameraHint = $('#cameraHint');
 const captureBtn = $('#captureBtn');
+const cameraView = $('#cameraView');
 const countdownEl = $('#countdown');
 
 async function startCamera() {
   cameraHint.hidden = true;
+  cameraView.classList.remove('is-live', 'is-error');
   captureBtn.disabled = true;
   setButtonLabel(captureBtn, 'Start');
   try {
@@ -52,11 +54,13 @@ async function startCamera() {
     });
     video.srcObject = state.stream;
     await video.play();
+    cameraView.classList.add('is-live');
     captureBtn.disabled = false;
     startFaceWatch();
     startOutline();
   } catch (err) {
     console.error(err);
+    cameraView.classList.add('is-error');
     // Upload is hidden for now, so only point to the staff (was: "Upload a photo or ask the staff").
     showCameraError($('#uploadBtn').hidden ? 'Camera is not available<br>Please ask the staff' : 'Camera is not available<br>Upload a photo or ask the staff');
   }
@@ -68,6 +72,7 @@ function stopCamera() {
   state.stream?.getTracks().forEach(t => t.stop());
   state.stream = null;
   video.srcObject = null;
+  cameraView.classList.remove('is-live');
   countdownEl.hidden = true;
 }
 
@@ -481,23 +486,27 @@ function startPublish() {
   const { blob, type } = state.art;
   qr.innerHTML = '<span class="result-step__qr-loader" aria-label="Uploading"></span>';
   resultHint.innerHTML = 'Preparing<br>your QR code…';
+  // No countdown while the QR code is loading: the visitor gets the full time once it's up.
+  stopResultTimer();
+  resultTimerEl.style.visibility = 'hidden'; // keeps its space, so the layout doesn't jump
   publishArt(blob, type)
     .then(url => {
       if (run !== publishRun) return;
       renderQr(qr, url);
       resultHint.innerHTML = RESULT_HINT_HTML;
+      startResultTimer();
     })
     .catch(err => {
       if (run !== publishRun) return;
       console.warn('Upload failed', err);
       qr.innerHTML = '<button class="result-step__retry" type="button" data-action="retry-upload">Retry</button>';
       resultHint.innerHTML = 'Upload failed<br>check the internet';
+      startResultTimer(); // so an unattended kiosk still finds its way home
     });
 }
 
 function retryUpload() {
   if (state.step !== 'result' || !state.art) return;
-  startResultTimer(); // give the visitor the full countdown again
   startPublish();
 }
 
@@ -520,9 +529,9 @@ async function publishArt(blob, type) {
   });
   const json = await res.json().catch(() => null);
   if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status}) ${json?.message || ''}`.trim());
-  const id = json?.data?.id;
-  if (id === undefined || id === null || id === '') throw new Error('Invalid upload response');
-  return `${cfg.downloadBaseUrl}/${encodeURIComponent(id)}`;
+  const qrId = json?.data?.qrId;
+  if (!qrId) throw new Error('Invalid upload response');
+  return `${cfg.downloadBaseUrl}/${encodeURIComponent(qrId)}`;
 }
 
 function randomUserId() {
@@ -532,8 +541,8 @@ function randomUserId() {
   return `curious-${rand}`;
 }
 
-// The result screen goes back to home by itself after 30 seconds, counting down on screen.
-const RESULT_TIMEOUT_S = 30;
+// The result screen goes back to home by itself after 90 seconds, counting down on screen.
+const RESULT_TIMEOUT_S = 90;
 const resultTimerEl = $('#resultTimer');
 let resultTimer = null;
 
@@ -542,6 +551,7 @@ function startResultTimer() {
   let left = RESULT_TIMEOUT_S;
   const show = () => { resultTimerEl.textContent = `Back to home in ${left}s`; };
   show();
+  resultTimerEl.style.visibility = '';
   resultTimer = setInterval(() => {
     left--;
     if (left <= 0) { stopResultTimer(); home(); return; }

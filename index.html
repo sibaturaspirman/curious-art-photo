@@ -72,7 +72,8 @@
       <div class="card-step__frame">
         <img class="card-step__logo" src="assets/logo-iqos-keyhole.png" alt="IQOS">
         <h2 class="card-step__title camera-step__title">Take your photo<br> &amp; turn it into AI art</h2>
-        <div class="card-step__card camera-view">
+        <div class="card-step__card camera-view" id="cameraView">
+          <p class="camera-view__placeholder">Camera loading…</p>
           <video class="camera-view__video" id="video" playsinline muted autoplay></video>
           <canvas class="card-step__outline" id="cameraOutline" aria-hidden="true"></canvas>
           <div class="camera-view__countdown" id="countdown" hidden></div>
@@ -150,7 +151,7 @@
             <button class="btn btn--primary" type="button" data-action="try-again"><span class="btn__loader"></span><span class="btn__content">Try again</span></button>
           </div>
           <p class="result-step__disclaimer">*AI generated content</p>
-          <p class="result-step__timer" id="resultTimer" aria-live="off">Back to home in 30s</p>
+          <p class="result-step__timer" id="resultTimer" aria-live="off">Back to home in 90s</p>
         </div>
       </div>
     </section>

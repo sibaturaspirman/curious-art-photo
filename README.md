@@ -1,6 +1,6 @@
 # Curious Art Photo (IQOS kiosk)
 
-Welcome → camera → preview → result (glitch art) → QR to the download page on `download.grvty.id`.
+Welcome → camera → preview → result (glitch art) → QR to the download page on `download.agrvty.net`.
 
 Runs as an Android app (APK, via Capacitor) or in a browser.
 
@@ -10,7 +10,7 @@ The app uploads each result straight from the frontend to the engagement API. No
 
 - `POST {engagementBaseUrl}/v1/submissions`, multipart `externalUserId` (random) and `file`
 - Headers `x-app-key`, `x-app-secret`, `Accept: application/json`
-- The QR points at `{downloadBaseUrl}/{data.id}`, e.g. `https://download.grvty.id/9`
+- The QR points at `{downloadBaseUrl}/{data.qrId}`, e.g. `https://download.agrvty.net/ZXnxUCjT`
 - If the upload fails (no internet), the QR box shows **Retry**
 
 Settings live in `config.js`. The key ships inside the app, so it should only be allowed to submit to this engagement, and should be rotated after the event.

@@ -339,7 +339,16 @@ button { font: inherit; }
 }
 
 /* ---------- camera ---------- */
-.camera-view__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+/* Hidden until the stream plays: before that iOS and Android draw a grey play-button poster. */
+.camera-view__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0; }
+.camera-view.is-live .camera-view__video { opacity: 1; }
+.camera-view__placeholder {
+  position: absolute; inset: 0; margin: 0; display: grid; place-items: center;
+  font-size: calc(26 * var(--fu)); letter-spacing: .04em; color: rgba(230, 251, 255, .7);
+  animation: placeholder-pulse 1.4s ease-in-out infinite alternate;
+}
+.camera-view.is-live .camera-view__placeholder, .camera-view.is-error .camera-view__placeholder { display: none; }
+@keyframes placeholder-pulse { from { opacity: .45; } to { opacity: 1; } }
 .camera-view__countdown {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-size: calc(220 * var(--fu)); font-weight: 700; color: var(--color-soft-white);
