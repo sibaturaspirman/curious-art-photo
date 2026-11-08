@@ -1,0 +1,188 @@
+﻿<!doctype html>
+<!-- "legal-hidden" hides the white health-warning bar at the bottom. Remove the class to show it again. -->
+<html lang="en" class="legal-hidden">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Curious Art Photo</title>
+<!-- PWA: installable via Chrome's "Add to Home screen"; opens fullscreen in portrait. -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#020a2c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Curious Art">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<script>
+  // Inside the Android app (Capacitor) the files are already on the device: no service worker, and
+  // no frame.html preview wrapper.
+  window.IS_NATIVE_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!window.IS_NATIVE_APP && 'serviceWorker' in navigator) {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker not registered', err)));
+  }
+</script>
+<script>
+  // The app is sized for the 800 x 1280 kiosk tablet. On a wider screen (laptop, desktop) show it in
+  // frame.html, which keeps it at exactly 800 x 1280 and scales it to fit. ?frame=0 turns this off.
+  if (!window.IS_NATIVE_APP && window === top && !/[?&]frame=0\b/.test(location.search) && innerWidth > 820) {
+    location.replace('frame.html' + location.search);
+  }
+</script>
+<link rel="stylesheet" href="styles.css">
+<script src="assets/vendor/qrcode.min.js"></script><!-- qrcode-generator 1.4.4 -->
+</head>
+<body>
+  <div class="startup-loader" id="loader"><div class="startup-spinner"></div></div>
+
+  <main class="app-layout">
+    <div class="app-layout__background"></div>
+    <div class="app-layout__illustration app-layout__illustration--left"></div>
+    <div class="app-layout__illustration app-layout__illustration--top"></div>
+    <div class="app-layout__illustration app-layout__illustration--bottom"></div>
+    <canvas class="app-layout__fx" aria-hidden="true"></canvas>
+
+    <div class="app-layout__stage">
+
+      <!-- ============ WELCOME ============ -->
+      <section class="step welcome-step" data-step="welcome">
+        <img class="logo" src="assets/logo-iqos-keyhole.png" alt="IQOS">
+        <div class="welcome-step__hero">
+          <h1 class="welcome-step__title">
+            <span class="welcome-step__title-art">ART</span>
+            <span class="welcome-step__title-for-the">FOR THE</span>
+            <span class="welcome-step__title-curious">CURIOUS</span>
+          </h1>
+          <p class="welcome-step__subtitle">This activity is intended for entertainment purpose only. It is not intended to define or accurately represent an individual’s personality.</p>
+        </div>
+        <button class="btn btn--primary welcome-step__start" type="button" data-action="start">
+          <span class="btn__loader"></span><span class="btn__content">Start</span>
+        </button>
+        <p class="welcome-step__caption">By selecting “Start” you accept the
+          <button class="welcome-step__terms-link" type="button" data-action="open-terms">Terms &amp; Conditions</button></p>
+      </section>
+
+    </div>
+
+    <!-- Camera, preview and result share the card layout from the DWP Figma frame (1920 x 1080):
+         title on top, a 570 x 757 framed card in the middle, buttons underneath. -->
+
+    <!-- ============ CAMERA ============ -->
+    <section class="step card-step camera-step" data-step="camera">
+      <button class="home-button" type="button" data-action="home" aria-label="Home"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="38" fill="rgba(0,0,0,.25)" stroke="#fff" stroke-width="3"/><path d="M24 40 40 26l16 14M29 36v18h22V36" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="card-step__frame">
+        <img class="card-step__logo" src="assets/logo-iqos-keyhole.png" alt="IQOS">
+        <h2 class="card-step__title camera-step__title">Take your photo<br> &amp; turn it into AI art</h2>
+        <div class="card-step__card camera-view">
+          <video class="camera-view__video" id="video" playsinline muted autoplay></video>
+          <canvas class="card-step__outline" id="cameraOutline" aria-hidden="true"></canvas>
+          <div class="camera-view__countdown" id="countdown" hidden></div>
+          <p class="card-step__hint" id="cameraHint" hidden></p>
+        </div>
+        <div class="card-step__actions">
+          <button class="btn btn--primary" type="button" id="captureBtn" data-action="capture">
+            <span class="btn__loader"></span><span class="btn__content">Start</span>
+          </button>
+        </div>
+        <!-- Upload is hidden for now (client request); remove `hidden` to bring it back. -->
+        <button class="btn-pill card-step__upload" type="button" id="uploadBtn" data-action="upload" hidden>
+          <span class="btn__loader"></span><span class="btn__content">Upload</span>
+        </button>
+      </div>
+      <input type="file" id="uploadInput" accept="image/*" hidden>
+    </section>
+
+    <!-- ============ PREVIEW ============ -->
+    <section class="step card-step preview-step" data-step="preview">
+      <button class="home-button" type="button" data-action="home" aria-label="Home"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="38" fill="rgba(0,0,0,.25)" stroke="#fff" stroke-width="3"/><path d="M24 40 40 26l16 14M29 36v18h22V36" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="card-step__frame">
+        <img class="card-step__logo" src="assets/logo-iqos-keyhole.png" alt="IQOS">
+        <h2 class="card-step__title">Your photo result</h2>
+        <div class="card-step__card">
+          <img class="card-step__media" id="previewImg" alt="">
+          <canvas class="card-step__outline" id="previewOutline" aria-hidden="true"></canvas>
+          <p class="card-step__hint" id="previewHint" hidden></p>
+        </div>
+        <div class="card-step__actions">
+          <button class="btn btn--secondary" type="button" id="retakeBtn" data-action="retake">
+            <span class="btn__loader"></span><span class="btn__content">Retake</span>
+          </button>
+          <button class="btn btn--primary" type="button" id="nextBtn" data-action="submit">
+            <span class="btn__loader"></span><span class="btn__content">Next</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LOADING ============ -->
+    <!-- While the art is made: the visitor's photo glitching in the card. Pure CSS (transform/opacity)
+         animation, so it keeps moving while the page is busy rendering. -->
+    <section class="step card-step loading-step" data-step="loading" aria-live="polite">
+      <div class="loading-step__screen" id="loadingScreen" aria-hidden="true"></div>
+      <div class="card-step__frame">
+        <img class="card-step__logo" src="assets/logo-iqos-keyhole.png" alt="IQOS">
+        <h2 class="card-step__title loading-step__title" data-text="Creating your AI art">Creating your AI art</h2>
+        <div class="card-step__card loading-step__card" id="loadingCard" data-variant="scan"></div>
+        <div class="loading-step__meter">
+          <div class="loading-step__progress"><div class="loading-step__bar" id="loadingBar"></div></div>
+          <p class="loading-step__status" id="loadingStatus">Your AI art is in progress…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RESULT ============ -->
+    <section class="step card-step result-step" data-step="result">
+      <button class="home-button" type="button" data-action="home" aria-label="Home"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="38" fill="rgba(0,0,0,.25)" stroke="#fff" stroke-width="3"/><path d="M24 40 40 26l16 14M29 36v18h22V36" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="card-step__frame">
+        <!-- Landscape: two columns, the art card | title, QR, instructions and Finish.
+             Portrait: stacked like the other card screens (the side column dissolves). -->
+        <div class="card-step__card">
+          <video class="card-step__media result-step__art" id="resultVideo" muted loop autoplay playsinline aria-label="AI art" hidden></video>
+          <img class="card-step__media result-step__art" id="resultImage" alt="AI art" hidden>
+        </div>
+        <div class="result-step__side">
+          <h2 class="card-step__title result-step__title"><span class="result-step__title-line">Your curiosity</span> <span class="result-step__title-line result-step__title-line--indent">became AI art<span class="result-step__asterisk">*</span></span></h2>
+          <div class="result-step__qr-panel">
+            <div class="result-step__qr" id="resultQr" role="img" aria-label="QR code"></div>
+            <p class="result-step__hint" id="resultHint">Scan QR code<br>to download your art</p>
+          </div>
+          <div class="card-step__actions">
+            <a class="btn btn--secondary result-step__download" id="resultDownload" download="ai-art.mp4"><span class="btn__content">Download</span></a>
+            <!-- Try again goes back to the welcome screen -->
+            <button class="btn btn--primary" type="button" data-action="try-again"><span class="btn__loader"></span><span class="btn__content">Try again</span></button>
+          </div>
+          <p class="result-step__disclaimer">*AI generated content</p>
+          <p class="result-step__timer" id="resultTimer" aria-live="off">Back to home in 30s</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TERMS MODAL ============ -->
+    <div class="terms-modal" id="terms" role="dialog" aria-modal="true" aria-label="Terms &amp; Conditions" hidden>
+      <div class="terms-modal__overlay" data-action="close-terms"></div>
+      <div class="terms-modal__panel">
+        <div class="terms-modal__text">
+          <!-- Consent copy from the original Curious Art Photo activation (terms.consent), wording unchanged -->
+          <p>I consent to PMI using my images (including photographs, videos, and/or sound recordings) in AI-generated content as part of the IQOS Curious Studio experience.</p>
+          <p>Furthermore, I consent to these images being processed by a third party (JETSET FZ LLC) and other PMI suppliers, with whom PMI has a contract.</p>
+          <p>The images will permanently deleted [by PMI and its suppliers] shortly after (and in any event within 24 hours after) the IQOS Studio Curious engagement session ends.</p>
+        </div>
+        <button class="btn btn--primary" type="button" data-action="confirm-terms"><span class="btn__content">Confirm</span></button>
+      </div>
+    </div>
+
+    <footer class="legal-bar">
+      <p class="legal-bar__text">This product is not risk free and provides nicotine, which is addictive<br>
+        Only for use by adults who would otherwise smoke or use nicotine products</p>
+    </footer>
+  </main>
+
+<script src="glitch.js"></script>
+<script src="glitch-video.js"></script>
+<script src="outline.js"></script>
+<script src="config.js"></script>
+<script src="loading.js"></script>
+<script src="app.js"></script>
+<script src="bg-glitch.js"></script>
+</body>
+</html>

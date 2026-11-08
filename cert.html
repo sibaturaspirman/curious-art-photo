@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- Staff page: install the kiosk's certificate on a tablet once, so Chrome trusts the HTTPS address
+     (no warning) and the PWA can be installed with offline cache. Open over plain HTTP:
+     http://<kiosk computer IP>:5191/cert.html -->
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pasang Sertifikat Kiosk</title>
+<style>
+  @font-face { font-family: IQOS; src: url("fonts/IQOS-Regular.ttf"); }
+  @font-face { font-family: IQOS; src: url("fonts/IQOS-Bold.otf"); font-weight: 700; }
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 32px 20px 48px;
+    font: 17px/1.5 IQOS, system-ui, sans-serif; color: #e8f1ff;
+    background: radial-gradient(ellipse at 50% 20%, #0b3a9e 0, #06216a 45%, #020a2c 100%) fixed;
+  }
+  main { max-width: 620px; margin: 0 auto; }
+  img { height: 44px; display: block; margin-bottom: 28px; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+  p { margin: 0 0 16px; color: #b9cdf0; }
+  .btn {
+    display: block; text-align: center; text-decoration: none; margin: 24px 0 32px;
+    padding: 18px 24px; border-radius: 999px; background: #16d9e3; color: #020a2c;
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  }
+  ol { margin: 0 0 24px; padding-left: 22px; }
+  li { margin-bottom: 12px; }
+  b { color: #fff; }
+  .box { border: 1px solid rgba(22, 217, 227, .35); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px; background: rgba(2, 10, 44, .45); }
+  h2 { font-size: 18px; margin: 0 0 12px; color: #16d9e3; }
+  code { color: #fff; word-break: break-all; }
+</style>
+</head>
+<body>
+<main>
+  <img src="assets/logo-iqos-keyhole.png" alt="IQOS">
+  <h1>Pasang sertifikat kiosk</h1>
+  <p>Cukup sekali per tablet. Setelah ini Chrome tidak memberi peringatan lagi, dan app bisa di-install ke homescreen dengan mode offline.</p>
+
+  <a class="btn" href="kiosk-ca.crt" download="curious-art-kiosk-ca.crt">Download sertifikat</a>
+
+  <div class="box">
+    <h2>Android (tablet Advan)</h2>
+    <ol>
+      <li>Tap tombol <b>Download sertifikat</b> di atas.</li>
+      <li>Buka <b>Settings → Security / Keamanan → Encryption &amp; credentials → Install a certificate → CA certificate</b>. (Kalau tidak ketemu, cari <b>"certificate"</b> di kolom pencarian Settings.)</li>
+      <li>Tap <b>Install anyway</b>, buka PIN/pola layar kalau diminta, lalu pilih file <b>curious-art-kiosk-ca.crt</b> dari Downloads.</li>
+      <li><b>Tutup Chrome sepenuhnya</b> (swipe dari recent apps), lalu buka lagi.</li>
+      <li>Buka <code id="appUrl">https://&lt;IP komputer&gt;:5192</code>. Harusnya tanpa peringatan.</li>
+      <li>Menu <b>⋮ → Add to Home screen / Install app</b>.</li>
+    </ol>
+  </div>
+
+  <div class="box">
+    <h2>iPad / iPhone</h2>
+    <ol>
+      <li>Download sertifikat di Safari, lalu tap <b>Allow</b>.</li>
+      <li><b>Settings → Profile Downloaded → Install</b>.</li>
+      <li><b>Settings → General → About → Certificate Trust Settings</b> → nyalakan <b>Curious Art Photo Kiosk CA</b>.</li>
+    </ol>
+  </div>
+
+  <p>Sertifikat ini hanya berlaku untuk komputer kiosk ini. Kalau IP komputer berubah, tidak perlu pasang ulang.</p>
+</main>
+<script>
+  // Fill in this computer's HTTPS address (same host, port 5192).
+  document.getElementById('appUrl').textContent = `https://${location.hostname}:5192`;
+</script>
+</body>
+</html>

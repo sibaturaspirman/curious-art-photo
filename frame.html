@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- Shows the app at the kiosk tablet size (800 x 1280) on a bigger screen, scaled to fit the window.
+     index.html sends wide screens here; the tablet itself runs index.html directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curious Art Photo</title>
+<style>
+  :root { --w: 800; --h: 1280; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  .screen {
+    position: absolute; left: 0; top: 0;
+    width: calc(var(--w) * 1px); height: calc(var(--h) * 1px);
+    border: 0; display: block; background: #000;
+    transform-origin: 0 0;
+  }
+</style>
+</head>
+<body>
+<iframe class="screen" id="screen" allow="camera; microphone; fullscreen; clipboard-write" title="Curious Art Photo"></iframe>
+<script>
+  const W = 800, H = 1280;
+  const frame = document.getElementById('screen');
+  const params = new URLSearchParams(location.search);
+  params.set('frame', '0');
+  frame.src = 'index.html?' + params.toString();
+
+  // Same scale as an 800 x 1280 tablet, but the frame takes the window's shape, so the app's own
+  // responsive layout fills the spare width or height instead of leaving black bars.
+  function fit() {
+    const s = Math.min(innerWidth / W, innerHeight / H);
+    frame.style.width = `${innerWidth / s}px`;
+    frame.style.height = `${innerHeight / s}px`;
+    frame.style.transform = `scale(${s})`;
+  }
+  addEventListener('resize', fit);
+  fit();
+</script>
+</body>
+</html>

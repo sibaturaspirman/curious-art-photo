@@ -1,0 +1,709 @@
+/* Layout is authored on a 1024 x 1366 (iPad portrait) stage; 1 --du = 1 design pixel. */
+@font-face { font-family: "IQOS"; src: url("fonts/IQOS-Light.ttf") format("truetype"); font-weight: 100 300; font-display: swap; }
+@font-face { font-family: "IQOS"; src: url("fonts/IQOS-Regular.ttf") format("truetype"); font-weight: 400 500; font-display: swap; }
+@font-face { font-family: "IQOS"; src: url("fonts/IQOS-Bold.otf") format("opentype"); font-weight: 600 900; font-display: swap; }
+
+:root {
+  --color-cyan: #00d1d2;
+  --color-cta: #0decff;      /* DWP button palette */
+  --color-cta-rim: #9ff7ff;
+  --color-cta-ink: #02050f;
+  --color-cta-ice: #e5fdff;
+  --color-ink: #393e44;
+  --color-soft-white: #fffdfb;
+  --color-bg-deep: #04123a;
+  --font: "IQOS", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --du: min(100vw / 1024, 100dvh / 1366); /* older browsers: see @supports below */
+  /* Spare height on screens taller than the 1024 x 1366 design (e.g. 16:10 tablets). The stage sits at
+     the bottom, and full-bleed media (camera, preview, result art) stretch up by this much. */
+  --oy: max(0px, 100dvh - 1366 * var(--du));
+  --warning-height: calc(137 * var(--du));
+  /* 1 --fu = 1 px of the DWP Figma frame (1920 x 1080). Scales with the screen height, and never so big
+     that the 570px card plus margins (640 fu) overflows the width on portrait screens. */
+  --fu: min(100dvh / 1080, 100vw / 640);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+}
+@supports not (height: 100dvh) {
+  :root { --du: min(100vw / 1024, 100vh / 1366); --oy: max(0px, 100vh - 1366 * var(--du)); --fu: min(100vh / 1080, 100vw / 640); }
+}
+@media (max-width: 600px) {
+  :root { --du: calc(100vw / 1024); --oy: 0px; --warning-height: calc(104px + env(safe-area-inset-bottom)); }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body {
+  overflow: hidden;
+  font-family: var(--font);
+  color: var(--color-soft-white);
+  background: #000;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+img, video, svg { user-select: none; -webkit-user-drag: none; }
+button { font: inherit; }
+[hidden] { display: none !important; }
+
+@keyframes fade-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes content-enter { from { opacity: 0; filter: blur(6px); } to { opacity: 1; filter: blur(0); } }
+@keyframes step-enter { from { opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes drift { from { transform: translate3d(calc(-6 * var(--du)), 0, 0); } to { transform: translate3d(calc(6 * var(--du)), calc(-4 * var(--du)), 0); } }
+
+/* ---------- startup loader ---------- */
+.startup-loader {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  background: #00103f;
+  transition: opacity .5s ease, visibility .5s;
+}
+.startup-loader.is-hidden { opacity: 0; visibility: hidden; }
+.startup-spinner {
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 5px solid rgba(255,255,255,.19); border-top-color: var(--color-cyan);
+  animation: spin .8s linear infinite;
+}
+
+/* ---------- app layout ---------- */
+.app-layout {
+  position: relative; width: 100%; height: 100vh; height: 100dvh; overflow: hidden;
+  background: var(--color-bg-deep);
+}
+.app-layout__background {
+  position: absolute; inset: 0;
+  background:
+    url("assets/bg-kv.webp") center / cover no-repeat,
+    radial-gradient(ellipse 65% 50% at 50% 42%, #3d7bff 0%, #0b3fb8 45%, var(--color-bg-deep) 100%);
+}
+/* Animated glitch layer over every screen (bg-glitch.js): above the screens, below the Terms modal,
+   never takes a tap. */
+.app-layout__fx { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
+.app-layout__illustration {
+  position: absolute;
+  width: calc(1611 * var(--du)); height: calc(1610 * var(--du));
+  background: url("assets/glitch.webp") center / cover no-repeat;
+  pointer-events: none;
+  /* slow drift, plus a rare short jitter (on `translate`, so the two don't fight over `transform`) */
+  animation: drift 9s ease-in-out infinite alternate, jitter 4s steps(1) infinite;
+}
+.app-layout__illustration--left   { top: calc(-122 * var(--du) + var(--oy)); left: calc(50% - 512 * var(--du) - 1173 * var(--du)); }
+.app-layout__illustration--top    { top: calc(-1198 * var(--du)); left: calc(50% - 512 * var(--du) - 398 * var(--du)); animation-delay: -3s, -2.3s; }
+.app-layout__illustration--bottom { top: calc(593 * var(--du) + var(--oy)); left: calc(50% - 512 * var(--du) + 348 * var(--du)); animation-delay: -6s, -4.6s; }
+/* On the card screens the clusters sit as in the DWP Figma frame: top-left and bottom-right corners,
+   plus one large faint one across the middle. */
+.app-layout:not([data-screen="welcome"]) .app-layout__illustration { width: calc(1024 * var(--fu)); height: calc(1024 * var(--fu)); }
+.app-layout:not([data-screen="welcome"]) .app-layout__illustration--left {
+  left: calc(50% - 985 * var(--fu) - 512 * var(--fu)); top: calc(50% - 540 * var(--fu) - 512 * var(--fu));
+}
+.app-layout:not([data-screen="welcome"]) .app-layout__illustration--bottom {
+  left: calc(50% + 922 * var(--fu) - 512 * var(--fu)); top: calc(50% + 512 * var(--fu) - 512 * var(--fu)); rotate: 90deg;
+}
+.app-layout:not([data-screen="welcome"]) .app-layout__illustration--top {
+  width: calc(2190 * var(--fu)); height: calc(2190 * var(--fu));
+  left: calc(50% - 1095 * var(--fu)); top: calc(50% - 1095 * var(--fu)); rotate: 90deg;
+  opacity: .11; mix-blend-mode: lighten;
+}
+/* Portrait (the 800 x 1280 kiosk tablet): the client's sharp 1000 x 2000 background from the working
+   file (anchored to the bottom so its own glitch cluster stays in view), plus their sharp transparent
+   glitch cluster (1000 x 685) placed like the global reference: one hanging upside down from the top
+   edge, one poking in from the left side. The bottom-right cluster is already in the background. */
+@media (max-aspect-ratio: 5/4) {
+  .app-layout__background {
+    background:
+      url("assets/bg-portrait.webp") center bottom / cover no-repeat,
+      var(--color-bg-deep);
+  }
+  :root .app-layout .app-layout__illustration {
+    background: url("assets/glitch-cluster.webp") center / contain no-repeat;
+    opacity: 1; mix-blend-mode: normal;
+  }
+  :root .app-layout .app-layout__illustration--top {
+    width: 115vw; height: calc(115vw * .685);
+    /* Back in, but softer: dense edge at the screen top, at 55% opacity, with a soft hole cut where
+       the IQOS logo sits so the logo always reads on clear background. The element is turned 180deg,
+       so the hole's position is mirrored (logo at ~63% / 51% of the box -> 37% / 49%). */
+    left: -22vw; top: calc(115vw * -.685 * .38); rotate: 180deg;
+    opacity: .55;
+    -webkit-mask-image: radial-gradient(ellipse 30% 22% at 37% 49%, transparent 0, transparent 55%, #000 100%);
+            mask-image: radial-gradient(ellipse 30% 22% at 37% 49%, transparent 0, transparent 55%, #000 100%);
+  }
+  :root .app-layout .app-layout__illustration--left {
+    width: 72vw; height: calc(72vw * .685);
+    left: -40vw; top: 36vh; rotate: none;
+  }
+  :root .app-layout .app-layout__illustration--bottom { display: none; }
+}
+@keyframes jitter {
+  0%, 100% { translate: 0 0; }
+  86%      { translate: calc(12 * var(--du)) calc(-3 * var(--du)); }
+  88%      { translate: calc(-9 * var(--du)) calc(4 * var(--du)); }
+  90%      { translate: calc(5 * var(--du)) 0; }
+  92%      { translate: 0 0; }
+}
+.app-layout__stage {
+  position: absolute; top: var(--oy); left: 50%; translate: -50% 0;
+  width: calc(1024 * var(--du)); height: calc(100% - var(--oy));
+}
+@media (max-width: 600px) {
+  .app-layout__stage { width: 100%; }
+}
+
+/* ---------- steps ---------- */
+.step {
+  position: absolute; inset: 0 0 var(--warning-height) 0;
+  display: none; color: #fff; text-align: center;
+}
+.step.is-active { display: block; animation: step-enter .52s var(--ease-out) both; }
+
+/* ---------- button ---------- */
+/* DWP Figma "Button": primary 440 x 96 cyan with a 2px #9FF7FF rim, secondary 260 x 96 cyan outline,
+   28px bold uppercase label, no glow. Plus the small "Upload" pill. */
+.btn {
+  position: relative; display: inline-grid; place-items: center; box-sizing: border-box;
+  width: calc(440 * var(--fu)); height: calc(96 * var(--fu)); padding: 0 calc(24 * var(--fu));
+  font-family: var(--font); font-size: calc(28 * var(--fu)); font-weight: 700;
+  line-height: 1; letter-spacing: .14em; text-transform: uppercase;
+  text-decoration: none; white-space: nowrap;
+  border: calc(2 * var(--fu)) solid transparent; border-radius: 999px;
+  cursor: pointer; touch-action: manipulation;
+  transition: filter .1s ease, scale .1s ease;
+}
+.btn--primary { background: var(--color-cta); color: var(--color-cta-ink); border-color: var(--color-cta-rim); }
+.btn--secondary { width: calc(260 * var(--fu)); background: rgba(2, 5, 15, .35); color: var(--color-cta); border-color: var(--color-cta); }
+.btn-pill {
+  position: relative; display: inline-grid; place-items: center; box-sizing: border-box;
+  width: calc(108 * var(--fu)); height: calc(40 * var(--fu)); padding: 0;
+  font-family: var(--font); font-size: calc(11.67 * var(--fu)); font-weight: 700;
+  line-height: 1; letter-spacing: .14em; text-transform: uppercase;
+  background: var(--color-cta-ink); color: var(--color-cta);
+  border: max(1px, calc(.833 * var(--fu))) solid var(--color-cta); border-radius: 999px;
+  cursor: pointer; touch-action: manipulation;
+}
+.btn__content { display: block; transition: opacity .22s ease; }
+.btn__loader {
+  position: absolute; inset: 0; margin: auto;
+  width: calc(36 * var(--fu)); height: calc(36 * var(--fu));
+  border: calc(4 * var(--fu)) solid rgba(57,62,68,.28); border-top-color: currentColor; border-radius: 50%;
+  opacity: 0; animation: spin .72s linear infinite; transition: opacity .22s ease;
+}
+.btn-pill .btn__loader { width: calc(18 * var(--fu)); height: calc(18 * var(--fu)); border-width: 2px; }
+.is-loading .btn__content { opacity: 0; }
+.is-loading .btn__loader { opacity: 1; }
+.btn:disabled, .btn-pill:disabled { cursor: default; opacity: .45; }
+.btn:active:not(:disabled), .btn-pill:active:not(:disabled) { filter: brightness(.9); scale: .95; }
+.btn:focus-visible, .btn-pill:focus-visible { outline: 2px solid var(--color-cta); outline-offset: 4px; }
+@media (max-width: 600px) {
+  .btn { height: 56px; font-size: 15px; border-width: 2px; }
+  .btn--primary { width: min(calc(100vw - 48px), 320px); }
+  .btn--secondary { width: 140px; }
+  .btn-pill { width: 96px; height: 36px; font-size: 11px; }
+  .btn__loader { width: 24px; height: 24px; border-width: 3px; }
+}
+
+/* ---------- logo / home ---------- */
+.logo {
+  position: absolute; left: 50%; translate: -50% 0; z-index: 1;
+  top: calc(60 * var(--du) - var(--oy)); height: calc(98 * var(--du)); width: auto; /* pinned to the screen top */
+}
+@media (max-width: 600px) {
+  .logo { top: calc(26px + env(safe-area-inset-top)); height: 28px; }
+}
+.home-button {
+  position: absolute; z-index: 1;
+  top: calc(40 * var(--du) - var(--oy)); left: calc(40 * var(--du)); /* pinned to the screen top */
+  width: calc(80 * var(--du)); height: calc(80 * var(--du));
+  padding: 0; background: none; border: 0; cursor: pointer;
+}
+.home-button svg { display: block; width: 100%; height: 100%; }
+@media (max-width: 600px) { .home-button { top: calc(16px + env(safe-area-inset-top)); left: 16px; width: 44px; height: 44px; } }
+
+/* ---------- welcome ---------- */
+/* Title and subtitle as one block, centred (both ways) between the bottom of the logo and the top of
+   the Start button. The logo ends at 126 du from the screen top; the button starts at 1057 du. */
+.welcome-step__hero {
+  position: absolute; left: 0; right: 0;
+  top: calc(126 * var(--du) - var(--oy)); height: calc(931 * var(--du) + var(--oy));
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: calc(40 * var(--du));
+}
+.welcome-step__title { margin: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.welcome-step__title span {
+  display: block; font-weight: 700; white-space: nowrap;
+  font-size: calc(136 * var(--du)); line-height: .87; letter-spacing: calc(-6.8 * var(--du));
+  animation: content-enter .52s var(--ease-out) both;
+}
+/* the staircase */
+.welcome-step__title-for-the { margin-left: calc(101 * var(--du)); }
+.welcome-step__title-curious { margin-left: calc(202 * var(--du)); }
+.welcome-step__subtitle {
+  margin: 0; font-size: max(11px, min(18px, calc(24 * var(--du)))); line-height: 1.3;
+  max-width: min(calc(560 * var(--du)), calc(100vw - 48px)); text-align: center; text-wrap: balance;
+  animation: content-enter .52s .12s var(--ease-out) both;
+}
+.welcome-step__start, .welcome-step__caption { position: absolute; left: 50%; translate: -50% 0; }
+.welcome-step__start { top: calc(1057 * var(--du)); animation: content-enter .52s .22s var(--ease-out) both; }
+.welcome-step__caption {
+  /* just under the Start button, whose height is in --fu (96 fu), so this follows it on any screen shape */
+  top: calc(1057 * var(--du) + 96 * var(--fu) + 18 * var(--du)); margin: 0;
+  font-size: calc(18 * var(--du)); line-height: 1.3; white-space: nowrap;
+  animation: content-enter .52s .32s var(--ease-out) both;
+}
+.welcome-step__terms-link { padding: 0; color: inherit; font: inherit; text-decoration: underline; background: none; border: 0; cursor: pointer; }
+@media (max-width: 600px) {
+  /* between the logo (ends ~57px from the top) and the button (starts 124px from the bottom) */
+  .welcome-step__hero { top: calc(64px + env(safe-area-inset-top)); bottom: 136px; height: auto; left: 24px; right: 24px; gap: 20px; }
+  .welcome-step__title { align-items: center; }
+  .welcome-step__title span { font-size: clamp(40px, 13vw, 72px); line-height: 1; letter-spacing: -.05em; }
+  .welcome-step__title-for-the, .welcome-step__title-curious { margin-left: 0; }
+  .welcome-step__start { top: auto; bottom: 68px; width: calc(100% - 48px); max-width: 360px; }
+  .welcome-step__caption { top: auto; bottom: 16px; width: calc(100% - 48px); font-size: 13px; white-space: normal; }
+}
+
+/* ---------- card screens (camera, preview, result) ---------- */
+/* Laid out like the DWP Figma frame: a 1920 x 1080 composition (in --fu) centred on the screen, with the
+   title above a 570 x 757 framed card and the buttons below it. The background shows around the card. */
+.card-step__frame {
+  position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%;
+  height: calc(1080 * var(--fu));
+}
+.card-step__title {
+  position: absolute; left: 50%; translate: -50% 0; bottom: calc(1080 * var(--fu) - 118 * var(--fu));
+  width: max-content; max-width: calc(100vw - 32px); margin: 0;
+  font-size: calc(56 * var(--fu)); font-weight: 700; line-height: 1; text-transform: uppercase; text-align: center;
+  background: linear-gradient(90deg, #fff 0%, #a3ffff 45.7%, #eaffff 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 calc(4 * var(--fu)) calc(37 * var(--fu)) rgba(2, 249, 248, .4));
+}
+.card-step__card {
+  position: absolute; left: 50%; translate: -50% 0; top: calc(142 * var(--fu));
+  width: calc(570 * var(--fu)); height: calc(757 * var(--fu)); box-sizing: border-box;
+  overflow: hidden; background: #02050f;
+  border: calc(4 * var(--fu)) solid #02f9f8;
+}
+.card-step__media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Dashed person outline (outline.js), over the camera / photo and under the hint and countdown */
+.card-step__outline { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.card-step__hint {
+  position: absolute; left: calc(20 * var(--fu)); right: calc(20 * var(--fu)); bottom: calc(20 * var(--fu)); z-index: 1;
+  margin: 0; padding: calc(12 * var(--fu)) calc(16 * var(--fu));
+  font-size: calc(22 * var(--fu)); line-height: 1.3;
+  background: rgba(2, 5, 15, .72); border: 1px solid rgba(13, 236, 255, .5); border-radius: calc(12 * var(--fu));
+}
+.card-step__actions {
+  position: absolute; left: 50%; translate: -50% 0; top: calc(923 * var(--fu));
+  display: flex; gap: calc(24 * var(--fu));
+}
+.card-step__upload { position: absolute; left: calc(48 * var(--fu)); top: calc(957 * var(--fu)); }
+.card-step .home-button { z-index: 1; top: calc(40 * var(--fu)); left: calc(48 * var(--fu)); width: calc(64 * var(--fu)); height: calc(64 * var(--fu)); }
+/* IQOS logo centred at the top of the camera, preview and loading screens (client feedback, after the
+   global reference). */
+.card-step__logo {
+  position: absolute; left: 50%; translate: -50% 0; top: calc(12 * var(--fu)); z-index: 1;
+  height: calc(46 * var(--fu)); width: auto; pointer-events: none;
+}
+/* Portrait screens (the 800 x 1280 kiosk tablet) have no room beside the card. Top to bottom (fu):
+   logo 24-88 with Home (top-left) level with it, title ending at 180, card 196-896 (570:757 shape, a bit
+   smaller), buttons from 920. */
+@media (max-aspect-ratio: 5/4) {
+  .card-step .home-button {
+    left: calc(28 * var(--fu)); top: calc(39 * var(--fu));
+    width: calc(34 * var(--fu)); height: calc(34 * var(--fu)); opacity: .75;
+  }
+  .card-step__logo { top: calc(24 * var(--fu)); height: calc(64 * var(--fu)); } /* 40% bigger than 46 fu */
+  .card-step__title { bottom: calc(1080 * var(--fu) - 180 * var(--fu)); font-size: calc(44 * var(--fu)); line-height: 1.05; }
+  .camera-step__title { font-size: calc(38 * var(--fu)); }
+  .card-step__card { top: calc(196 * var(--fu)); width: calc(527 * var(--fu)); height: calc(700 * var(--fu)); }
+  .card-step__actions { top: calc(920 * var(--fu)); }
+  .loading-step__meter { top: calc(930 * var(--fu)); }
+  /* Retake + Next side by side would be wider than a portrait screen at their landscape sizes, so the
+     pair spans the card width instead: Retake fixed, Next takes the rest. */
+  .preview-step .card-step__actions { width: calc(527 * var(--fu)); }
+  /* Retake and Next share the width equally (was Retake 190 fu fixed, Next the rest) */
+  .preview-step .btn--secondary,
+  .preview-step .btn--primary { width: auto; flex: 1 1 0; min-width: 0; }
+  /* Upload sits centred under the Start button (which runs 890-986 fu) */
+  .card-step__upload {
+    left: 50%; right: auto; translate: -50% 0; top: calc(1004 * var(--fu));
+    width: calc(88 * var(--fu)); height: calc(30 * var(--fu)); font-size: calc(10 * var(--fu)); opacity: .75;
+  }
+}
+@media (max-width: 600px) {
+  .card-step .home-button { top: calc(16px + env(safe-area-inset-top)); left: 16px; width: 40px; height: 40px; }
+  .card-step__title, .result-step .card-step__title { font-size: 22px; max-width: calc(100vw - 120px); }
+  .card-step__actions { gap: 12px; }
+  .card-step__hint { font-size: 14px; }
+  .card-step__upload { right: 16px; }
+}
+
+/* ---------- camera ---------- */
+.camera-view__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.camera-view__countdown {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: calc(220 * var(--fu)); font-weight: 700; color: var(--color-soft-white);
+  background: rgba(0,0,0,.35); pointer-events: none;
+}
+.camera-view__countdown span { animation: content-enter .4s var(--ease-out) both; }
+
+/* ---------- loading ---------- */
+/* Everything here animates transform/opacity only, so it stays smooth while the page is busy rendering. */
+.loading-step__title::before, .loading-step__title::after {
+  content: attr(data-text); position: absolute; inset: 0;
+  background: none; -webkit-text-fill-color: currentColor; pointer-events: none;
+}
+.loading-step__title::before { color: #0decff; clip-path: inset(0 0 55% 0); animation: title-glitch 1.7s steps(1) infinite; }
+.loading-step__title::after { color: #ff3d8b; clip-path: inset(60% 0 0 0); animation: title-glitch 1.3s steps(1) infinite reverse; }
+@keyframes title-glitch {
+  0%, 100% { translate: 0 0; opacity: 0; }
+  12%      { translate: calc(-6 * var(--fu)) 0; opacity: .9; }
+  16%      { translate: calc(5 * var(--fu)) 0; opacity: .7; }
+  20%      { translate: 0 0; opacity: 0; }
+  62%      { translate: calc(8 * var(--fu)) 0; opacity: .8; }
+  66%      { translate: 0 0; opacity: 0; }
+}
+.loading-step__base { filter: saturate(.6) contrast(1.1) brightness(.85); }
+.loading-step__rgb { mix-blend-mode: screen; opacity: .5; }
+.loading-step__rgb--r { filter: grayscale(1) sepia(1) saturate(8) hue-rotate(-40deg); animation: rgb-split 1.1s steps(1) infinite; }
+.loading-step__rgb--c { filter: grayscale(1) sepia(1) saturate(8) hue-rotate(150deg); animation: rgb-split 1.1s steps(1) infinite reverse; }
+@keyframes rgb-split {
+  0%, 100% { translate: calc(-4 * var(--fu)) 0; }
+  25%      { translate: calc(-14 * var(--fu)) calc(2 * var(--fu)); }
+  50%      { translate: calc(-2 * var(--fu)) 0; }
+  75%      { translate: calc(-9 * var(--fu)) calc(-2 * var(--fu)); }
+}
+.loading-step__slice {
+  clip-path: inset(var(--t) 0 var(--b) 0);
+  animation: slice-shift var(--d) steps(1) infinite var(--delay);
+}
+@keyframes slice-shift {
+  0%, 100% { translate: 0 0; }
+  20%      { translate: calc(26 * var(--fu)) 0; }
+  40%      { translate: calc(-18 * var(--fu)) 0; }
+  55%      { translate: 0 0; }
+  80%      { translate: calc(40 * var(--fu)) 0; }
+}
+.loading-step__tint {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(31, 99, 255, .8), rgba(11, 63, 184, .75)); mix-blend-mode: color;
+}
+/* KV glitch shards flickering over the photo */
+.loading-step__shard {
+  position: absolute; width: 90%; aspect-ratio: 1; pointer-events: none;
+  background: url("assets/glitch.webp") center / contain no-repeat; mix-blend-mode: screen;
+  animation: shard-flicker 1.6s steps(1) infinite;
+}
+.loading-step__shard--a { left: -30%; bottom: -25%; }
+.loading-step__shard--b { right: -35%; top: -20%; rotate: 180deg; animation-duration: 2.1s; animation-delay: -.8s; }
+@keyframes shard-flicker {
+  0%, 100% { opacity: .75; translate: 0 0; }
+  30%      { opacity: .35; translate: calc(10 * var(--fu)) 0; }
+  45%      { opacity: .9; translate: calc(-6 * var(--fu)) calc(3 * var(--fu)); }
+  70%      { opacity: .5; translate: 0 0; }
+}
+.loading-step__scan {
+  position: absolute; left: 0; right: 0; top: 0; height: calc(4 * var(--fu));
+  background: #c8ffff; box-shadow: 0 0 calc(18 * var(--fu)) calc(4 * var(--fu)) rgba(13, 236, 255, .7);
+  animation: scan-sweep 1.8s linear infinite;
+}
+@keyframes scan-sweep { from { translate: 0 calc(-10 * var(--fu)); } to { translate: 0 calc(757 * var(--fu)); } }
+
+/* Variant D, "storm": the whole screen breaks into glitch for ~1.5s, calms by ~2.6s with the card
+   settling in the middle, then only small blips. The storm plays once per visit (forwards). */
+.loading-step__screen { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.lfx-band {
+  position: absolute; inset: 0; background: url("assets/bg-kv.webp") center / cover no-repeat;
+  animation: lfx-band 2.6s forwards; animation-timing-function: steps(2);
+}
+@keyframes lfx-band {
+  0%       { translate: var(--dx) 0; opacity: 1; }
+  10%      { translate: calc(var(--dx) * -.8) 0; }
+  20%      { translate: calc(var(--dx) * .6) 0; }
+  32%      { translate: calc(var(--dx) * -.4) 0; }
+  44%      { translate: calc(var(--dx) * .15) 0; opacity: 1; }
+  58%      { translate: 0 0; opacity: .6; }
+  70%, 100% { translate: 0 0; opacity: 0; }
+}
+.lfx-rgb {
+  position: absolute; inset: 0; background: url("assets/bg-kv.webp") center / cover no-repeat;
+  mix-blend-mode: screen; opacity: 0; animation: lfx-rgb 2.6s forwards; animation-timing-function: steps(3);
+}
+.lfx-rgb--r { filter: grayscale(1) sepia(1) saturate(8) hue-rotate(-40deg); }
+.lfx-rgb--c { filter: grayscale(1) sepia(1) saturate(8) hue-rotate(150deg); animation-name: lfx-rgb-c; }
+@keyframes lfx-rgb   { 0% { opacity: .6; translate: -3vw 0; } 20% { opacity: .5; translate: 2vw .5vh; } 40% { opacity: .35; translate: -1vw 0; } 60%, 100% { opacity: 0; translate: 0 0; } }
+@keyframes lfx-rgb-c { 0% { opacity: .6; translate: 3vw 0; } 20% { opacity: .5; translate: -2vw -.5vh; } 40% { opacity: .35; translate: 1vw 0; } 60%, 100% { opacity: 0; translate: 0 0; } }
+.lfx-shard {
+  position: absolute; width: var(--s); aspect-ratio: 1; scale: var(--flip) 1;
+  background: url("assets/glitch.webp") center / contain no-repeat; mix-blend-mode: screen;
+  opacity: 0; animation: lfx-shard 2.4s forwards; animation-timing-function: steps(1);
+}
+@keyframes lfx-shard {
+  0%  { opacity: 0; } 5% { opacity: .95; translate: 0 0; } 12% { opacity: .3; translate: 2vw 0; }
+  20% { opacity: .9; translate: -1.5vw .5vh; } 30% { opacity: .2; } 38% { opacity: .7; translate: 1vw 0; }
+  50%, 100% { opacity: 0; translate: 0 0; }
+}
+.lfx-bars {
+  position: absolute; inset: 0; mix-blend-mode: screen;
+  background:
+    linear-gradient(transparent 22%, rgba(13, 236, 255, .55) 22% 23.2%, transparent 23.2% 61%, rgba(255, 61, 139, .45) 61% 61.8%, transparent 61.8% 84%, rgba(230, 251, 255, .5) 84% 84.6%, transparent 84.6%);
+  animation: lfx-bars 2.4s forwards; animation-timing-function: steps(1);
+}
+@keyframes lfx-bars {
+  0% { opacity: 1; translate: 0 0; } 8% { translate: 0 -14vh; } 16% { translate: 0 9vh; } 24% { opacity: .8; translate: 0 -5vh; }
+  34% { translate: 0 20vh; } 44% { opacity: .5; translate: 0 2vh; } 55%, 100% { opacity: 0; translate: 0 0; }
+}
+.lfx-strobe { position: absolute; inset: 0; background: #e6fbff; opacity: 0; animation: lfx-strobe 2s forwards; }
+@keyframes lfx-strobe { 0% { opacity: .7; } 4% { opacity: 0; } 10% { opacity: .45; } 13% { opacity: 0; } 30% { opacity: .2; } 32%, 100% { opacity: 0; } }
+/* The card is shaken and broken up, then settles (transform, so its centring `translate` is untouched). */
+.loading-step__card[data-variant="storm"] { animation: lv-storm-card 2.6s forwards; animation-timing-function: steps(2); }
+@keyframes lv-storm-card {
+  0%       { transform: translate(calc(40 * var(--fu)), calc(-14 * var(--fu))) scale(1.08); opacity: .2; }
+  6%       { transform: translate(calc(-30 * var(--fu)), calc(8 * var(--fu))) scale(1.05); opacity: 1; }
+  14%      { transform: translate(calc(22 * var(--fu)), 0) scale(1.04); opacity: .6; }
+  22%      { transform: translate(calc(-14 * var(--fu)), calc(5 * var(--fu))) scale(1.03); opacity: 1; }
+  34%      { transform: translate(calc(8 * var(--fu)), 0) scale(1.015); }
+  46%      { transform: translate(calc(-3 * var(--fu)), 0) scale(1); }
+  60%, 100% { transform: none; opacity: 1; }
+}
+.lv-storm-slice {
+  clip-path: inset(var(--t) 0 var(--b) 0);
+  animation: lv-storm-slice 2.6s forwards, lv-storm-blip var(--d) 2.6s steps(1) infinite;
+  animation-timing-function: steps(2);
+}
+@keyframes lv-storm-slice {
+  0%       { translate: var(--dx) 0; }
+  12%      { translate: calc(var(--dx) * -.7) 0; }
+  24%      { translate: calc(var(--dx) * .5) 0; }
+  36%      { translate: calc(var(--dx) * -.25) 0; }
+  48%      { translate: calc(var(--dx) * .08) 0; }
+  60%, 100% { translate: 0 0; }
+}
+@keyframes lv-storm-blip { 0%, 84%, 100% { translate: 0 0; } 86% { translate: calc(14 * var(--fu)) 0; } 89% { translate: calc(-9 * var(--fu)) 0; } 91% { translate: 0 0; } }
+.lv-storm-rgb { mix-blend-mode: screen; opacity: 0; animation: lv-storm-rgb 2.6s forwards, lv-storm-rgb-idle 1.4s 2.6s steps(1) infinite; }
+.lv-storm-rgb--r { filter: grayscale(1) sepia(1) saturate(8) hue-rotate(-40deg); }
+.lv-storm-rgb--c { filter: grayscale(1) sepia(1) saturate(8) hue-rotate(150deg); animation-direction: normal, reverse; }
+@keyframes lv-storm-rgb { 0% { opacity: .7; translate: calc(-34 * var(--fu)) 0; } 20% { opacity: .6; translate: calc(24 * var(--fu)) calc(5 * var(--fu)); } 40% { opacity: .45; translate: calc(-12 * var(--fu)) 0; } 60%, 100% { opacity: .25; translate: calc(-3 * var(--fu)) 0; } }
+@keyframes lv-storm-rgb-idle { 0%, 100% { opacity: .25; translate: calc(-3 * var(--fu)) 0; } 50% { opacity: .4; translate: calc(-9 * var(--fu)) 0; } 54% { translate: calc(-3 * var(--fu)) 0; } }
+/* The KV clusters behind quake while the storm plays. */
+.app-layout[data-screen="loading"] .app-layout__illustration { animation: drift 9s ease-in-out infinite alternate, quake .14s steps(1) 16; }
+@keyframes quake {
+  0%  { translate: calc(26 * var(--fu)) calc(-8 * var(--fu)); }
+  33% { translate: calc(-20 * var(--fu)) calc(10 * var(--fu)); }
+  66% { translate: calc(10 * var(--fu)) calc(-4 * var(--fu)); }
+}
+
+/* Variant B, "assemble": fragments fly in from all sides in glitchy jumps and lock into the photo. */
+.lv-tile {
+  animation: lv-assemble 4.4s infinite var(--delay);
+  animation-timing-function: steps(2);
+}
+.lv-tile--tint { filter: grayscale(1) sepia(1) saturate(6) hue-rotate(150deg) brightness(1.15); }
+@keyframes lv-assemble {
+  0%       { opacity: 0; translate: var(--x) var(--y); }
+  8%       { opacity: .9; translate: var(--x) var(--y); }
+  16%      { translate: calc(var(--x) * -.5) calc(var(--y) * .4); }
+  24%      { translate: calc(var(--x) * .7) calc(var(--y) * -.3); }
+  32%      { translate: calc(var(--x) * -.25) calc(var(--y) * .1); }
+  40%      { translate: calc(var(--x) * .12) 0; }
+  48%, 90% { opacity: 1; translate: 0 0; }
+  100%     { opacity: 0; translate: 0 0; }
+}
+.lv-whole { opacity: 0; animation: lv-whole 4.4s steps(1) infinite .5s; }
+@keyframes lv-whole { 0%, 54% { opacity: 0; } 55%, 92% { opacity: 1; } 93%, 100% { opacity: 0; } }
+.lv-flash { position: absolute; inset: 0; background: #e6fbff; opacity: 0; pointer-events: none; animation: lv-flash 4.4s infinite .5s; }
+@keyframes lv-flash { 0%, 53% { opacity: 0; } 55% { opacity: .55; } 62%, 100% { opacity: 0; } }
+
+/* Variant C, "decode": coarse-to-fine pixel layers, with an RGB split that settles as it sharpens. */
+.lv-pixel { image-rendering: pixelated; opacity: 0; animation: 4.2s steps(1) infinite; }
+.lv-pixel[style*="--i: 0"] { animation-name: lv-decode-0; }
+.lv-pixel[style*="--i: 1"] { animation-name: lv-decode-1; }
+.lv-pixel[style*="--i: 2"] { animation-name: lv-decode-2; }
+.lv-pixel[style*="--i: 3"] { animation-name: lv-decode-3; }
+.lv-pixel[style*="--i: 4"] { animation-name: lv-decode-4; }
+.lv-pixel[style*="--i: 5"] { animation-name: lv-decode-5; image-rendering: auto; }
+@keyframes lv-decode-0 { 0%, 90% { opacity: 1; } 91%, 100% { opacity: 0; } }
+@keyframes lv-decode-1 { 0%, 10% { opacity: 0; } 11%, 90% { opacity: 1; } 91%, 100% { opacity: 0; } }
+@keyframes lv-decode-2 { 0%, 21% { opacity: 0; } 22%, 90% { opacity: 1; } 91%, 100% { opacity: 0; } }
+@keyframes lv-decode-3 { 0%, 32% { opacity: 0; } 33%, 90% { opacity: 1; } 91%, 100% { opacity: 0; } }
+@keyframes lv-decode-4 { 0%, 43% { opacity: 0; } 44%, 90% { opacity: 1; } 91%, 100% { opacity: 0; } }
+@keyframes lv-decode-5 { 0%, 55% { opacity: 0; } 56%, 90% { opacity: 1; } 91%, 100% { opacity: 0; } }
+.lv-split { mix-blend-mode: screen; opacity: 0; animation: lv-split 4.2s infinite; animation-timing-function: steps(3); }
+.lv-split--r { filter: grayscale(1) sepia(1) saturate(8) hue-rotate(-40deg); }
+.lv-split--c { filter: grayscale(1) sepia(1) saturate(8) hue-rotate(150deg); animation-name: lv-split-c; }
+@keyframes lv-split {
+  0%   { opacity: .6; translate: calc(-26 * var(--fu)) 0; }
+  20%  { opacity: .55; translate: calc(18 * var(--fu)) calc(4 * var(--fu)); }
+  40%  { opacity: .45; translate: calc(-10 * var(--fu)) 0; }
+  56%  { opacity: .25; translate: calc(4 * var(--fu)) 0; }
+  70%, 100% { opacity: 0; translate: 0 0; }
+}
+@keyframes lv-split-c {
+  0%   { opacity: .6; translate: calc(22 * var(--fu)) 0; }
+  20%  { opacity: .55; translate: calc(-16 * var(--fu)) calc(-3 * var(--fu)); }
+  40%  { opacity: .45; translate: calc(9 * var(--fu)) 0; }
+  56%  { opacity: .25; translate: calc(-3 * var(--fu)) 0; }
+  70%, 100% { opacity: 0; translate: 0 0; }
+}
+.lv-noise {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(200, 255, 255, .14) 0 2px, transparent 2px 6px);
+  animation: lv-noise 4.2s steps(1) infinite;
+}
+@keyframes lv-noise { 0%, 50% { opacity: 1; translate: 0 0; } 25% { translate: 0 3px; } 56%, 100% { opacity: .15; } }
+
+.loading-step__meter {
+  position: absolute; left: 50%; translate: -50% 0; top: calc(935 * var(--fu)); width: calc(440 * var(--fu));
+  display: flex; flex-direction: column; align-items: center; gap: calc(16 * var(--fu));
+}
+.loading-step__progress {
+  width: 100%; height: calc(8 * var(--fu)); overflow: hidden; border-radius: 999px;
+  background: rgba(2, 5, 15, .5); border: 1px solid rgba(13, 236, 255, .5);
+}
+.loading-step__bar {
+  width: 100%; height: 100%; background: var(--color-cta); transform-origin: left; transform: scaleX(0);
+  transition: transform .45s var(--ease-out);
+}
+.loading-step__status {
+  margin: 0; font-size: calc(22 * var(--fu)); font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  white-space: nowrap; color: var(--color-cta-ice); text-shadow: 0 0 calc(10 * var(--fu)) rgba(0, 0, 0, .6);
+}
+@media (max-width: 600px) {
+  .loading-step__meter { width: min(calc(100vw - 48px), 320px); }
+  .loading-step__status { font-size: 13px; }
+}
+
+/* ---------- result ---------- */
+.result-step__art { opacity: 0; transition: opacity .42s ease; }
+.result-step__art.is-loaded { opacity: 1; }
+.result-step__asterisk { font-size: .45em; vertical-align: top; margin-left: .1em; -webkit-text-fill-color: #eaffff; }
+.result-step__qr svg, .result-step__qr img { display: block; width: 100%; height: 100%; }
+.result-step__qr { display: grid; place-items: center; }
+.result-step__qr-loader {
+  width: 40%; aspect-ratio: 1; border-radius: 50%;
+  border: max(3px, calc(5 * var(--fu))) solid rgba(2, 5, 15, .15); border-top-color: var(--color-cta-ink);
+  animation: spin .8s linear infinite;
+}
+.result-step__retry {
+  width: 100%; height: 100%; padding: 0; border: 0; border-radius: inherit; cursor: pointer;
+  background: var(--color-cta); color: var(--color-cta-ink);
+  font: 700 calc(22 * var(--fu)) / 1 var(--font); letter-spacing: .08em; text-transform: uppercase;
+}
+.result-step__retry:active { filter: brightness(.9); }
+.result-step__hint {
+  margin: 0; font-size: 14px; font-weight: 700; line-height: 1.25; letter-spacing: .08em; white-space: nowrap;
+  text-shadow: 0 0 calc(10 * var(--fu)) rgba(0,0,0,.6);
+}
+.result-step__download { display: none; }
+.result-step__disclaimer { margin: 0; font-size: calc(16 * var(--fu)); line-height: 1.3; white-space: nowrap; opacity: .8; }
+
+/* Portrait: stacked like the other card screens. The side column dissolves, so its children sit in the
+   frame directly; the QR rides on the bottom of the card. */
+.result-step__side { display: contents; }
+.result-step__qr-panel {
+  position: absolute; left: calc(50% - 285 * var(--fu) + 24 * var(--fu)); top: calc(142 * var(--fu) + 757 * var(--fu) - 24 * var(--fu)); translate: 0 -100%;
+  display: flex; flex-direction: row; align-items: center; gap: calc(16 * var(--fu)); text-align: left;
+  padding: calc(12 * var(--fu)); border-radius: calc(16 * var(--fu)); background: rgba(2, 5, 15, .72);
+}
+.result-step__qr {
+  width: calc(144 * var(--fu)); height: calc(144 * var(--fu)); padding: calc(10 * var(--fu)); box-sizing: border-box;
+  background: #fff; border-radius: calc(16 * var(--fu));
+}
+.result-step__disclaimer { position: absolute; left: 50%; translate: -50% 0; top: calc(1030 * var(--fu)); }
+/* 30-second countdown back to home (app.js), quiet, under the disclaimer */
+.result-step__timer {
+  position: absolute; left: 50%; translate: -50% 0; top: calc(1052 * var(--fu)); margin: 0;
+  font-size: calc(16 * var(--fu)); line-height: 1.3; white-space: nowrap; opacity: .65;
+  font-variant-numeric: tabular-nums;
+}
+/* Portrait (the 800 x 1280 kiosk tablet), after the global reference: a big solid-white two-line title
+   with the second line stepped right, the art card (570:757 shape), the QR with its instruction beside
+   it below the card, then a smaller Finish button and the disclaimer.
+   Title 56-160, card 176-716, QR 736-852, Finish 880-952, disclaimer 975 (fu). */
+@media (max-aspect-ratio: 5/4) {
+  .result-step .card-step__title {
+    bottom: calc(1080 * var(--fu) - 160 * var(--fu)); max-width: none;
+    font-size: calc(52 * var(--fu)); line-height: 1; text-align: left;
+    background: none; color: #fff; -webkit-text-fill-color: #fff;
+    filter: drop-shadow(0 calc(4 * var(--fu)) calc(24 * var(--fu)) rgba(0, 20, 80, .45));
+  }
+  .result-step__title-line { display: block; }
+  .result-step__title-line--indent { margin-left: calc(60 * var(--fu)); }
+  .result-step .result-step__asterisk { -webkit-text-fill-color: #fff; }
+  .result-step .card-step__card { top: calc(176 * var(--fu)); width: calc(407 * var(--fu)); height: calc(540 * var(--fu)); }
+  .result-step__qr-panel {
+    left: 50%; top: calc(736 * var(--fu)); translate: -50% 0;
+    gap: calc(24 * var(--fu)); padding: 0; background: none; border-radius: 0;
+  }
+  .result-step__qr { width: calc(116 * var(--fu)); height: calc(116 * var(--fu)); padding: calc(8 * var(--fu)); border-radius: calc(12 * var(--fu)); }
+  .result-step__hint { font-size: calc(24 * var(--fu)); letter-spacing: .01em; line-height: 1.25; }
+  .result-step .card-step__actions { top: calc(880 * var(--fu)); }
+  .result-step .btn--primary { width: calc(300 * var(--fu)); height: calc(72 * var(--fu)); font-size: calc(24 * var(--fu)); }
+  .result-step__disclaimer { top: calc(975 * var(--fu)); }
+  .result-step__timer { top: calc(1000 * var(--fu)); }
+}
+
+/* Landscape: two columns centred on the screen. Column 1 is the art card; column 2 stacks the title,
+   the QR, its instructions and the Finish button. 570 (card) + 80 (gap) + 560 (column) = 1210 fu. */
+@media (min-aspect-ratio: 501/400) {
+  .result-step .card-step__card { left: calc(50% - 605 * var(--fu)); translate: none; top: calc(161.5 * var(--fu)); }
+  .result-step__side {
+    position: absolute; left: calc(50% + 45 * var(--fu)); top: 0; bottom: 0; width: calc(560 * var(--fu));
+    display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+    gap: calc(40 * var(--fu)); text-align: left;
+  }
+  .result-step__side > * { position: static; translate: none; }
+  .result-step .card-step__title { width: auto; max-width: none; text-align: left; }
+  .result-step__qr-panel { flex-direction: column; align-items: flex-start; gap: calc(20 * var(--fu)); padding: 0; background: none; }
+  .result-step__qr { width: calc(264 * var(--fu)); height: calc(264 * var(--fu)); padding: calc(16 * var(--fu)); }
+  .result-step__disclaimer { margin-top: calc(-16 * var(--fu)); }
+}
+@media (max-width: 600px) {
+  .result-step__download { display: inline-grid; }
+  .result-step__disclaimer { font-size: 11px; }
+}
+
+/* ---------- terms modal ---------- */
+.terms-modal {
+  position: absolute; inset: 0 0 var(--warning-height) 0; z-index: 3;
+  display: grid; place-items: center;
+}
+.terms-modal__overlay { position: absolute; inset: 0; background: rgba(0,0,0,.89); animation: fade-enter .52s var(--ease-out) both; }
+.terms-modal__panel {
+  position: relative; display: flex; flex-direction: column; align-items: center;
+  gap: calc(60 * var(--du));
+  width: calc(826 * var(--du)); min-height: calc(576 * var(--du));
+  padding: calc(54 * var(--du)) calc(33 * var(--du));
+  background: #fff; border-radius: calc(18 * var(--du));
+  animation: terms-panel-enter .52s var(--ease-out) both;
+}
+.terms-modal__text {
+  display: flex; flex-direction: column; gap: calc(18 * var(--du)); min-height: calc(306 * var(--du));
+  color: var(--color-ink); font-size: calc(28 * var(--du)); line-height: 1.2; text-align: center;
+}
+.terms-modal__text p { margin: 0; }
+@keyframes terms-panel-enter { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+@media (max-width: 600px) {
+  .terms-modal { padding: 16px; }
+  .terms-modal__panel { gap: 24px; width: 100%; min-height: 0; max-height: 100%; padding: 24px 20px; overflow: hidden; border-radius: 12px; }
+  .terms-modal__text { flex-shrink: 0; gap: 16px; min-height: 0; font-size: 16px; line-height: 1.4; }
+}
+
+/* ---------- legal bar ---------- */
+.legal-bar {
+  position: absolute; right: 0; bottom: 0; left: 0; z-index: 4;
+  display: flex; align-items: center; justify-content: center;
+  height: var(--warning-height); background: #fff; text-align: center;
+}
+.legal-bar__text { margin: 0; padding: 0 calc(17 * var(--du)); color: var(--color-ink); font-size: calc(24 * var(--du)); line-height: 1.2; }
+@media (max-width: 600px) {
+  .legal-bar { padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); }
+  .legal-bar__text { padding: 0; font-size: 12px; line-height: 1.3; }
+}
+/* Switched off with class="legal-hidden" on <html>: the bar goes and its space is given back. */
+html.legal-hidden { --warning-height: 0px; }
+html.legal-hidden .legal-bar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

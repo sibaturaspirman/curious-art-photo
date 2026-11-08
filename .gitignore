@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Visitor results (photos/videos of people, deleted after 24 hours)
+uploads/
+
+# Local HTTPS certificates and private keys, generated per machine
+.certs/
+
+# Environment and secrets
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local tooling and build output
+.claude/
+output/
+www/
+*.apk
+*.aab
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

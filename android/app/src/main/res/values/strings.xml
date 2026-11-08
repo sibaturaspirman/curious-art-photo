@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Curious Art</string>
+    <string name="title_activity_main">Curious Art</string>
+    <string name="package_name">com.iqos.curiousart</string>
+    <string name="custom_url_scheme">com.iqos.curiousart</string>
+</resources>

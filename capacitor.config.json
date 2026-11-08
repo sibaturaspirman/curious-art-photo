@@ -1,0 +1,8 @@
+{
+  "appId": "com.iqos.curiousart",
+  "appName": "Curious Art",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
