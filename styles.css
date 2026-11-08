@@ -486,7 +486,8 @@ button { font: inherit; }
 @keyframes lv-storm-rgb { 0% { opacity: .7; translate: calc(-34 * var(--fu)) 0; } 20% { opacity: .6; translate: calc(24 * var(--fu)) calc(5 * var(--fu)); } 40% { opacity: .45; translate: calc(-12 * var(--fu)) 0; } 60%, 100% { opacity: .25; translate: calc(-3 * var(--fu)) 0; } }
 @keyframes lv-storm-rgb-idle { 0%, 100% { opacity: .25; translate: calc(-3 * var(--fu)) 0; } 50% { opacity: .4; translate: calc(-9 * var(--fu)) 0; } 54% { translate: calc(-3 * var(--fu)) 0; } }
 /* The KV clusters behind quake while the storm plays. */
-.app-layout[data-screen="loading"] .app-layout__illustration { animation: drift 9s ease-in-out infinite alternate, quake .14s steps(1) 16; }
+/* Only the quake: an endless drift on these large layers costs GPU memory the art render needs. */
+.app-layout[data-screen="loading"] .app-layout__illustration { animation: quake .14s steps(1) 16; }
 @keyframes quake {
   0%  { translate: calc(26 * var(--fu)) calc(-8 * var(--fu)); }
   33% { translate: calc(-20 * var(--fu)) calc(10 * var(--fu)); }

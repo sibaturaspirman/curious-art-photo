@@ -4,7 +4,7 @@
 // - Files are served from the cache and refreshed in the background, so an update shows up on the
 //   next launch. Bump VERSION after changing files to drop the old cache right away.
 // - Uploads go to the engagement API on another origin and are never cached.
-const VERSION = 'v8';
+const VERSION = 'v10';
 const CACHE = `curious-art-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'styles.css', 'manifest.json', 'config.js',

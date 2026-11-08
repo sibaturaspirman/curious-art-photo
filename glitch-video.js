@@ -619,11 +619,16 @@
     return muxerPromise;
   }
 
+  // Safari (and every iOS browser) ignores the bitrate in the default quality mode and writes ~30MB for
+  // the 6s clip, enough to run iPhones and iPads out of memory; in realtime mode it keeps to the bitrate.
+  const IS_WEBKIT = /Apple/.test(navigator.vendor);
+
   async function encoderConfig() {
     if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') return null;
     for (const codec of ENCODER_CODECS) {
       for (const hardwareAcceleration of ['prefer-hardware', 'no-preference']) {
         const config = { codec, width: W, height: H, bitrate: 6_000_000, framerate: FPS, hardwareAcceleration, avc: { format: 'avc' } };
+        if (IS_WEBKIT) config.latencyMode = 'realtime';
         try {
           if ((await VideoEncoder.isConfigSupported(config)).supported) return config;
         } catch (err) { /* try the next one */ }

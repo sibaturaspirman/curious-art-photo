@@ -65,7 +65,16 @@
   let scans = [], panel = null, burst = 0, streak = null, frameNo = 0;
   let nextBurst = Math.round(rand(2, 4) * FPS);
 
+  const layout = document.querySelector('.app-layout');
+  let paused = false;
+
   function frame() {
+    // Sits out the loading screen so the art render has the device to itself.
+    if (layout?.dataset.screen === 'loading') {
+      if (!paused) { ctx.clearRect(0, 0, W, H); paused = true; }
+      return;
+    }
+    paused = false;
     frameNo++;
     ctx.clearRect(0, 0, W, H);
 

@@ -105,6 +105,8 @@ window.LoadingFx = (() => {
   const BUILD = { storm, scan, assemble, decode };
   const SCREEN = { storm: stormScreen };
   const objectUrls = new WeakMap();
+  const screenTimers = new WeakMap();
+  const SCREEN_MS = 2700; // the storm's full-screen opener runs 2.6s
 
   // Fills `card` with the given variant for `photo` (a data URL or image URL), and `screen` (optional)
   // with its full-screen layer, if the variant has one. A data URL is turned into a short blob URL first,
@@ -126,8 +128,23 @@ window.LoadingFx = (() => {
     if (screen) {
       screen.dataset.variant = name;
       screen.innerHTML = SCREEN[name] ? SCREEN[name]() : '';
+      // The full-screen layers are invisible once the opener ends but still hold GPU memory, which
+      // phones and tablets need for the video render.
+      clearTimeout(screenTimers.get(screen));
+      screenTimers.set(screen, setTimeout(() => { screen.innerHTML = ''; }, SCREEN_MS));
     }
   }
 
-  return { setup, VARIANTS };
+  // Empties the card and screen layers once the loading screen is left.
+  function clear(card, screen = null) {
+    card.innerHTML = '';
+    URL.revokeObjectURL(objectUrls.get(card));
+    objectUrls.delete(card);
+    if (screen) {
+      clearTimeout(screenTimers.get(screen));
+      screen.innerHTML = '';
+    }
+  }
+
+  return { setup, clear, VARIANTS, SCREEN_MS };
 })();

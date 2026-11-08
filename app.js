@@ -13,6 +13,7 @@ const state = { step: null, stream: null, photo: null, art: null, busy: false };
 function go(name) {
   if (state.step === 'camera' && name !== 'camera') stopCamera();
   if (state.step === 'preview' && name !== 'preview') previewOutline?.clear();
+  if (state.step === 'loading' && name !== 'loading') window.LoadingFx.clear($('#loadingCard'), $('#loadingScreen'));
   if (name === 'result') startResultTimer(); else stopResultTimer();
   state.step = name;
   $('.app-layout').dataset.screen = name; // lets the background arrange itself per screen
@@ -421,7 +422,9 @@ async function generateArt(photoDataUrl, onProgress = () => {}) {
   const started = performance.now();
   onProgress(0.04);
   creepTo(0.3);
-  await wait(80); // let the loading screen paint before the heavy work starts
+  // Phones and tablets run out of memory (iOS reloads the page, the Android WebView force closes the app)
+  // when segmentation and the video render overlap the full-screen storm, so the work waits for it.
+  await wait(LOADING_VARIANT === 'storm' ? window.LoadingFx.SCREEN_MS : 80);
   const [photo, glitch] = await Promise.all([loadImage(photoDataUrl), loadImage('assets/glitch.webp')]);
   const result = pickResult();
   let art;
