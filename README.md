@@ -17,18 +17,31 @@ Settings live in `config.js`. The key ships inside the app, so it should only be
 
 ## Android app (APK)
 
-Needs [Android Studio](https://developer.android.com/studio), which includes the Android SDK and Java.
+Android Studio is not needed. The build uses these, kept in `~/Android`:
+
+- `jdk-21`: Amazon Corretto 21
+- `sdk`: Android command-line tools, plus `platform-tools`, `platforms;android-36`, `build-tools;36.0.0`
+- `gradle-8.14.3`: Gradle (the wrapper downloads from GitHub, which can be unreliable)
 
 ```bash
 npm install
-npm run android:open   # copies the web app to www/, syncs it to android/, opens Android Studio
+npm run android:apk    # → android/app/build/outputs/apk/debug/app-v0.1.apk
 ```
 
-In Android Studio, use **Build → Build App Bundle(s) / APK(s) → Build APK(s)**, or run on a connected tablet. From the command line, `npm run android:apk` builds `android/app/build/outputs/apk/debug/app-debug.apk`.
+The version is `appVersion` at the top of `android/app/build.gradle`. For a new release, bump it (e.g. `0.2`) and `appVersionCode` (e.g. `2`), or the tablet won't install it over the old one.
+
+Install on a tablet: copy the APK over and open it (allow "install unknown apps"), or with USB debugging
+`~/Android/sdk/platform-tools/adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
+
+`npm run android:open` opens the project in Android Studio instead, if it is installed.
 
 After changing any web file, run `npm run android:sync` before building again.
 
 The app is locked to portrait, keeps the screen on, and hides the system bars. It asks for camera permission on first use.
+
+## Vercel
+
+`vercel.json` deploys it as a static site: `npm run build:web` copies the web app into `www/`, which is served as is. `server.js` is excluded (`.vercelignore`), so Vercel does not try to run it as a function.
 
 ## Browser (testing)
 

@@ -1,0 +1,7 @@
+# Static site only: keep the local dev server and native project out of the Vercel build, so they are
+# never picked up as serverless functions.
+server.js
+cert.html
+android/
+.certs/
+uploads/

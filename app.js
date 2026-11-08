@@ -462,10 +462,6 @@ function showResult() {
   }
   art.src = artUrl;
 
-  const download = $('#resultDownload');
-  download.href = artUrl;
-  download.download = `ai-art.${extension(type)}`;
-
   startPublish();
   go('result');
 }

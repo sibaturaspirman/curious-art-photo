@@ -17,8 +17,7 @@
 <script>
   // Inside the Android app (Capacitor) the files are already on the device: no service worker, and
   // no frame.html preview wrapper.
-  window.IS_NATIVE_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-  if (!window.IS_NATIVE_APP && 'serviceWorker' in navigator) {
+  window.IS_NATIVE_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());  if (!window.IS_NATIVE_APP && 'serviceWorker' in navigator) {
     addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker not registered', err)));
   }
 </script>
@@ -147,7 +146,6 @@
             <p class="result-step__hint" id="resultHint">Scan QR code<br>to download your art</p>
           </div>
           <div class="card-step__actions">
-            <a class="btn btn--secondary result-step__download" id="resultDownload" download="ai-art.mp4"><span class="btn__content">Download</span></a>
             <!-- Try again goes back to the welcome screen -->
             <button class="btn btn--primary" type="button" data-action="try-again"><span class="btn__loader"></span><span class="btn__content">Try again</span></button>
           </div>
