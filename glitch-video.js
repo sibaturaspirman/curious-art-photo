@@ -38,14 +38,14 @@
     const c = canvas(W, H);
     const ctx = c.getContext('2d');
     const g = ctx.createRadialGradient(W * 0.5, H * 0.42, 0, W * 0.5, H * 0.42, H * 0.75);
-    g.addColorStop(0, '#1f55d6');
-    g.addColorStop(0.45, '#082c8c');
+    g.addColorStop(0, '#4172e7');
+    g.addColorStop(0.45, '#1d429e');
     g.addColorStop(1, '#020a24');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
     const glow = ctx.createRadialGradient(W * 0.3, H * 0.3, 0, W * 0.3, H * 0.3, W * 0.5);
-    glow.addColorStop(0, 'rgba(120,160,255,.2)');
-    glow.addColorStop(1, 'rgba(120,160,255,0)');
+    glow.addColorStop(0, 'rgba(65,114,231,.22)');
+    glow.addColorStop(1, 'rgba(65,114,231,0)');
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, H);
     return c;
@@ -66,12 +66,12 @@
     ctx.drawImage(mask, 0, 0);
     ctx.filter = 'none';
     ctx.globalCompositeOperation = 'source-in';
-    ctx.fillStyle = 'rgba(104,200,255,.7)';
+    ctx.fillStyle = 'rgba(65,114,231,.7)';
     ctx.fillRect(0, 0, W, H);
     return c;
   }
 
-  // Body in the KV blues: navy shadows, bright blue mids, cyan-white highlights and edges.
+  // Body in #4172E7: deep navy shadows, brand mid-tones, light-blue highlights and edges.
   function blueBody(base, mask) {
     const c = canvas(W, H);
     const ctx = c.getContext('2d', { willReadFrequently: true });
@@ -80,7 +80,7 @@
     const d = img.data;
     const gray = new Float32Array(W * H);
     for (let i = 0, p = 0; i < gray.length; i++, p += 4) gray[i] = luminance(d, p);
-    const lut = gradientLut(['#04123a', '#0b3fb8', '#2f8cff', '#9fe8ff', '#ffffff']);
+    const lut = gradientLut(['#04123a', '#1d429e', '#4172e7', '#a8c0ff', '#ffffff']);
 
     for (let y = 1; y < H - 1; y++) {
       for (let x = 1; x < W - 1; x++) {
@@ -399,7 +399,7 @@
   const PULSE_INTENSITY = 0.75;
 
   // Darker blue used by the soft version's slices and flashes, so they never wash the frame out white.
-  const KV_DEEP = ['#01040f', '#061a5c', '#0f3fb8', '#2f6ee0', '#7fb2ff'];
+  const KV_DEEP = ['#020a24', '#14358c', '#4172e7', '#7b9aef', '#c8d6ff'];
 
   // `soft`: no washed-out white bands. Slices come only from the natural frame and a deep-blue tint
   // (no negative or bright cyan), the hard-hit flash is a faint deep-blue one instead of the negative,
@@ -436,7 +436,7 @@
     const hardFlash = soft ? variants[0] : variants[2]; // deep blue, or the negative
     const hardFlashAlpha = soft ? 0.3 : 0.75;
     const blueFlashAlpha = soft ? 0.2 : 0.45;
-    const barColor = soft ? 'rgba(104,200,255,.35)' : 'rgba(160,255,255,.8)';
+    const barColor = soft ? 'rgba(65,114,231,.4)' : 'rgba(160,255,255,.8)';
     const [R, G, B] = [0, 1, 2].map(k => channel(natural, k));
     const lines = canvas(W, H);
     scanlines(lines.getContext('2d'), W, H, 0.1);

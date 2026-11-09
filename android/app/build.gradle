@@ -2,8 +2,8 @@ apply plugin: 'com.android.application'
 
 // Bump appVersion for each release; the APK is named app-v<appVersion>.apk. versionCode must also go
 // up for an installed app to accept the update.
-def appVersion = "0.5"
-def appVersionCode = 5
+def appVersion = "0.6"
+def appVersionCode = 6
 
 android {
     namespace = "com.iqos.curiousart"
